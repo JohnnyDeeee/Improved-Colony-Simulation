@@ -1,4 +1,6 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Property)]
-public class ExposePropertyAttribute : Attribute { }
+namespace Assets.Scripts.Utils {
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ExposePropertyAttribute : Attribute { }
+}

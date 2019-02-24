@@ -1,3 +1,7 @@
-﻿using UnityEngine;
+﻿using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
-public class ExposableMonobehaviour : MonoBehaviour { }
+namespace Assets.Scripts.Utils {
+    [SuppressMessage("ReSharper", "IdentifierTypo")]
+    public class ExposableMonobehaviour : MonoBehaviour { }
+}
