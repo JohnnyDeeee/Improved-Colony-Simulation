@@ -10,6 +10,20 @@ I'm going to try and write my own physics to reduce overhead and increase perfor
 
 ## TODO List
 - [ ] Implement Neural Net **or** Genetic Algorithm
+  - [ ] Neural Network
+    - [ ] Input (3): Vision; color of the thing we are seeing, format int[3] {R, G, B}
+    - [ ] Output (1): Direction to move to, format float { Degrees }
+    - [ ] Layers (1): ??
+    - [ ] Nodes (3): ??
+  - [ ] Genetic Algorithm
+    - [ ] Genomes
+      - [ ] Mass (fat parents get fat kids)
+      - [ ] Vision length
+      - [ ] Color (aesthetic, to see which creatures are from the same familly)
+    - [ ] Fitness function f(age)
+    - [ ] Selection: https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)
+    - [ ] Single point crossover: https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)
+    - [ ] Mutation: https://en.wikipedia.org/wiki/Mutation_(genetic_algorithm)
 - [x] Make creatures "look" for food, instead of following the mouse
 - [x] A way to represent objectives like food (maybe tile-based)
 - [x] Basic creatures with basic physics and movement
