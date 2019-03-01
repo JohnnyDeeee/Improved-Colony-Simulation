@@ -4,11 +4,12 @@ using UnityEngine;
 namespace Assets.Scripts {
     public class Manager : MonoBehaviour {
         private readonly List<CreatureBehaviour> _creatures = new List<CreatureBehaviour>();
+        [SerializeField] public int CreatureAmount = 100;
 
         // Start is called before the first frame update
         private void Start() {
             // Spawn creatures
-            for (var i = 0; i < 100; i++) {
+            for (var i = 0; i < CreatureAmount; i++) {
                 var creature = Instantiate(Resources.Load("Prefabs/creature") as GameObject)
                     .GetComponent<CreatureBehaviour>();
                 creature.Mass = Random.Range(1f, 10f);
@@ -32,12 +33,9 @@ namespace Assets.Scripts {
         private void Update() {
             // Let creatures move
             foreach (var creature in _creatures) {
-                var force = creature.SeekForce(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                //var force = creature.SeekForce(Camera.main.ScreenToWorldPoint(Input.mousePosition));
 
-                creature.ApplyForce(force);
-
-                // DEBUG
-                creature.Vision();
+                //creature.ApplyForce(force);
             }
         }
     }

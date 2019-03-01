@@ -9,6 +9,8 @@ Also i was using the Physics Engine in Unity and thus the performance was really
 I'm going to try and write my own physics to reduce overhead and increase performance (i hope). Also i'm going to focus more on core features instead of making everything big and fancy.
 
 ## TODO List
-- [ ] A way to represent objectives like food (maybe tile-based)
+- [ ] Implement Neural Net **or** Genetic Algorithm
+- [x] Make creatures "look" for food, instead of following the mouse
+- [x] A way to represent objectives like food (maybe tile-based)
 - [x] Basic creatures with basic physics and movement
 - [x] Camera movement (zoom and drag)
