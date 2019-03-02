@@ -5,26 +5,30 @@ using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
     public class CreatureBehaviour : ExposableMonobehaviour {
+        private readonly Vector2? _target = null;
         private Rigidbody2D _body;
+        private NeuralNetwork _brain;
         private LineRenderer _lineRenderer;
-        private Vector2? _target = null;
         [ExposeProperty] [SerializeField] public float Mass { get; set; }
         [ExposeProperty] [SerializeField] public float MaxSpeed { get; set; }
         [ExposeProperty] [SerializeField] public float MaxForce { get; set; }
-        [ExposeProperty] [SerializeField] public float Rotation { get; private set; }
-        [ExposeProperty] [SerializeField] public float VisionLength { get; private set; }
-        [ExposeProperty] [SerializeField] public Vector2 Acceleration { get; private set; }
-        [ExposeProperty] [SerializeField] public Vector2 Velocity { get; private set; }
-        [ExposeProperty] [SerializeField] public Vector2 Position { get; private set; }
+        [ExposeProperty] [SerializeField] public float Rotation { get; set; }
+        [ExposeProperty] [SerializeField] public float VisionLength { get; set; }
+        [ExposeProperty] [SerializeField] public Vector2 Acceleration { get; set; }
+        [ExposeProperty] [SerializeField] public Vector2 Velocity { get; set; }
+        [ExposeProperty] [SerializeField] public Vector2 Position { get; set; }
+        [ExposeProperty] [SerializeField] public bool Dead { get; set; }
 
         // Start is called before the first frame update
         private void Awake() {
             // Defaults
-            Mass = 0.1f;
-            MaxSpeed = 0.01f;
-            MaxForce = 0.0005f;
-            VisionLength = 0.2f;
+            Mass = 1f;
+            MaxSpeed = 0.1f;
+            MaxForce = 0.005f;
+            VisionLength = 2f;
             _body = GetComponent<Rigidbody2D>();
+            _brain = new NeuralNetwork(3, 3, 1);
+            ApplyForce(new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f))); // Random starting direction
         }
 
         private void Start() {
@@ -37,23 +41,45 @@ namespace Assets.Scripts {
 
         // Update is called once per frame
         private void Update() {
-            if(_target.HasValue)
+            if (Dead)
+                enabled = false; // This disables the Update() and FixedUpdate() function
+
+            if (_target.HasValue)
                 ApplyForce(_target.Value);
 
             // Display
-            transform.localScale = new Vector3(Mass, Mass, 0) * 0.01f;
+            transform.localScale = new Vector3(Mass, Mass, 0);
         }
 
         private void FixedUpdate() {
-            RaycastHit2D? vision = Vision(); // Always register vision
-            if ((Time.fixedTime) % 0.5f == 0) // Only act on vision every 500ms
-                SetTarget(vision);
+            RaycastHit2D? vision = Vision(); // Always register target
+            if (vision.HasValue) {
+                SpriteRenderer sprite = vision.Value.collider.GetComponent<SpriteRenderer>();
+
+                double r = sprite ? sprite.color.r : 0;
+                double g = sprite ? sprite.color.g : 0;
+                double b = sprite ? sprite.color.b : 0;
+
+                double[] result = _brain.FeedForward(new[] {r, g, b});
+
+                // DEBUG
+                //Debug.Log($"In[0-2]: {r}, {g}, {b}");
+                //Debug.Log($"Out[0] : {result[0]}");
+
+                // Choose to avoid or follow what we see
+                if (result[0] > 0.5f)
+                    ApplyForce(AvoidForce(vision.Value.collider.transform.position));
+                else
+                    ApplyForce(SeekForce(vision.Value.collider.transform.position));
+            }
+
+            // TODO: If we see nothing, go Wander()
 
             // Physics Movement
             Velocity += Acceleration;
             Velocity = Vector2.ClampMagnitude(Velocity, MaxSpeed / Mass); // Max speed, impacted by mass because otherwise everyone would move at the same speed (when reaching maxSpeed)
             if (Velocity.magnitude == 0)
-                Velocity = Vector2.ClampMagnitude(Velocity, MaxSpeed / 10); // Min speed (to prevent creatures from being unable to move)
+                Velocity = Vector2.ClampMagnitude(Velocity, 0.01f); // Min speed (to prevent creatures from being unable to move)
             Position += Velocity;
             Acceleration *= 0; // Clear acceleration for the next frame (otherwise it will build up)
 
@@ -61,44 +87,14 @@ namespace Assets.Scripts {
 
             // Rotation
             Vector2 newPosition = Position + Velocity;
-            Rotation = (float)(Mathf.Atan2(Position.y - newPosition.y, Position.x - newPosition.x) + Math.PI / 2);
+            Rotation = (float) (Mathf.Atan2(Position.y - newPosition.y, Position.x - newPosition.x) + Math.PI / 2);
 
             _body.rotation = Rotation * Mathf.Rad2Deg;
-        }
-
-        private void SetTarget(RaycastHit2D? vision) {
-            // Seek for food, or move to a random position
-            RaycastHit2D? hit = vision;
-            int radius = 10;
-            if (hit.HasValue) {
-                if (hit.Value.collider.GetComponent<FoodBehaviour>() == true)
-                    _target = SeekForce(hit.Value.collider.transform.position);
-                else
-                    _target = SeekForce(Random.insideUnitCircle * radius); // TODO: Get random position in range of current position
-            } else {
-                _target = SeekForce(Random.insideUnitCircle * radius); // TODO: Get random position in range of current position
-            }
-
-            // DEBUG - Draw circle around creature
-            //int segments = 8;
-            //int index = 0;
-            //_lineRenderer.startWidth = 0.01f;
-            //_lineRenderer.endWidth = 0.01f;
-            //_lineRenderer.positionCount = segments + 1;
-            //for (int i = 0; i <= 360; i+= (360/segments)) {
-            //    float x = Mathf.Sin(Mathf.Deg2Rad * i) * radius;
-            //    float y = Mathf.Cos(Mathf.Deg2Rad * i) * radius;
-            //    _lineRenderer.SetPosition(index, new Vector2(x, y));
-            //    index++;
-            //}
         }
 
         public void ApplyForce(Vector2 force) {
             force = force / Mass; // Size matters (bigger = slower, smaller = faster)
             Acceleration += force;
-
-            // DEBUG
-            Debug.DrawLine(Position, Position + (Velocity + Acceleration), Color.yellow);
         }
 
         public Vector2 SeekForce(Vector2 targetPosition) {
@@ -108,6 +104,13 @@ namespace Assets.Scripts {
             steering = Vector2.ClampMagnitude(steering, MaxForce);
 
             return steering;
+        }
+
+        public Vector2 AvoidForce(Vector2 avoidPosition) {
+            Vector2 ahead = (Vector2) transform.position + Velocity.normalized * VisionLength;
+            Vector2 avoidanceForce = Vector2.ClampMagnitude((ahead - Velocity).normalized, MaxForce);
+
+            return avoidanceForce;
         }
 
         public RaycastHit2D? Vision() {
@@ -130,6 +133,10 @@ namespace Assets.Scripts {
                 Debug.DrawRay(_body.position, transform.TransformDirection(Vector2.up) * VisionLength, Color.green);
 
             return hit;
+        }
+
+        public void Die() {
+            Dead = true;
         }
     }
 }

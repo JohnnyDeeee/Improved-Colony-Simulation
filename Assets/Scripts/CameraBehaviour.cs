@@ -14,7 +14,7 @@ namespace Assets.Scripts {
         public void Start() {
             _camera = GetComponent<Camera>();
             MinZoom = 0.1f;
-            MaxZoom = 20f;
+            MaxZoom = 200f;
             CurrentZoom = _camera.orthographicSize;
         }
 
