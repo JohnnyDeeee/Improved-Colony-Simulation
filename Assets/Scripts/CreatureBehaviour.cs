@@ -8,7 +8,6 @@ namespace Assets.Scripts {
         private readonly Vector2? _target = null;
         private Rigidbody2D _body;
         private NeuralNetwork _brain;
-        private LineRenderer _lineRenderer;
         [ExposeProperty] [SerializeField] public float Mass { get; set; }
         [ExposeProperty] [SerializeField] public float MaxSpeed { get; set; }
         [ExposeProperty] [SerializeField] public float MaxForce { get; set; }
@@ -33,10 +32,6 @@ namespace Assets.Scripts {
 
         private void Start() {
             Position = _body.position;
-
-            // DEBUG
-            _lineRenderer = gameObject.AddComponent<LineRenderer>();
-            _lineRenderer.useWorldSpace = false;
         }
 
         // Update is called once per frame
@@ -74,6 +69,7 @@ namespace Assets.Scripts {
             }
 
             // TODO: If we see nothing, go Wander()
+            WanderForce();
 
             // Physics Movement
             Velocity += Acceleration;
@@ -113,9 +109,24 @@ namespace Assets.Scripts {
             return avoidanceForce;
         }
 
+        public Vector2 WanderForce() {           
+            Vector2 ahead = GetForwardPosition(2);
+
+            // DEBUG - show ahead point
+            DebugExtensions.DrawLine(1, _body.position, ahead, 0.15f, Color.red);
+            DebugExtensions.DrawLine(2, _body.position, ahead + GetLeftPosition(2, false), 0.15f, Color.blue);
+            DebugExtensions.DrawLine(3, _body.position, ahead + GetRightPosition(2, false), 0.15f, Color.blue);
+            
+            // TODO: Get a point in between the blue lines
+            // TODO: ApplyForce towards that point
+            // TODO: On each frame make a SMALL adjustment to this steering
+
+            return Vector2.zero; // Return nothing for now
+        }
+
         public RaycastHit2D? Vision() {
             RaycastHit2D? hit = null;
-            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, transform.TransformDirection(Vector2.up), VisionLength);
+            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, GetForwardDirection(), VisionLength);
 
             // Validate hits
             if (hits.Length > 0)
@@ -130,13 +141,43 @@ namespace Assets.Scripts {
 
             // DEBUG - Vision range
             if (!hit.HasValue)
-                Debug.DrawRay(_body.position, transform.TransformDirection(Vector2.up) * VisionLength, Color.green);
+                Debug.DrawRay(_body.position, GetForwardDirection() * VisionLength, Color.green);
 
             return hit;
         }
 
         public void Die() {
             Dead = true;
+        }
+
+        private Vector2 GetForwardDirection() {
+            return transform.TransformDirection(Vector2.up);
+        }
+
+        private Vector2 GetLeftDirection() {
+            return transform.TransformDirection(Vector2.left);
+        }
+
+        private Vector2 GetRightDirection() {
+            return transform.TransformDirection(Vector2.right);
+        }
+
+        private Vector2 GetForwardPosition(float distance, bool fromBodyOrigin = true) {
+            if (fromBodyOrigin)
+                return _body.position + GetForwardDirection() * distance;
+            return GetForwardDirection() * distance;
+        }
+
+        private Vector2 GetLeftPosition(float distance, bool fromBodyOrigin = true) {
+            if (fromBodyOrigin)
+                return _body.position + GetLeftDirection() * distance;
+            return GetLeftDirection() * distance;
+        }
+
+        private Vector2 GetRightPosition(float distance, bool fromBodyOrigin = true) {
+            if (fromBodyOrigin)
+                return _body.position + GetRightDirection() * distance;
+            return GetRightDirection() * distance;
         }
     }
 }

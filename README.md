@@ -9,6 +9,7 @@ Also i was using the Physics Engine in Unity and thus the performance was really
 I'm going to try and write my own physics to reduce overhead and increase performance (i hope). Also i'm going to focus more on core features instead of making everything big and fancy.
 
 ## TODO List
+- [ ] Improve vision, create a "cone" \ / instead of a single straight line
 - [ ] Make creatures "Wander" if they see nothing
 - [ ] Genetic Algorithm
   - [ ] Genomes
