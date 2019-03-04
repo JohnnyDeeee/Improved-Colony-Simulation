@@ -27,7 +27,7 @@ namespace Assets.Scripts {
             _outputNodes = new double[_outputLayerSize];
 
             // Add bias nodes
-            const int bias = 1;
+            const int bias = 1; // TODO: What is a good value here?
             _inputNodes[0] = bias;
             _hiddenNodes[0] = bias;
 
@@ -50,31 +50,30 @@ namespace Assets.Scripts {
                 throw new Exception($"input size ({inputs.Length}) does not match required size ({_inputLayerSize})");
 
             // Normalize input
-            double[] normalizedInput = MinMaxNormalization(inputs);
-
+            double[] normalizedInput = MinMaxNormalization(inputs); // TODO: Maybe disable this to get bigger variance in outputs
             for (int i = 1; i < _inputNodes.Length; i++) // Start at 1 to skip bias node
                 _inputNodes[i] = normalizedInput[i - 1];
 
             // Activate hidden layer
-            for (int a = 1; a < _hiddenNodes.Length; a++) { // Start at 1 to skip bias node
-                double sum = 0;
-                for (int w = 0; w < _inputLayerSize; w++) {
-                    int index = _inputLayerSize * a - _inputLayerSize + w;
-                    sum += _inputWeights[index] * _inputNodes[w];
+            for (int hiddenLayerIndex = 1; hiddenLayerIndex < _hiddenNodes.Length; hiddenLayerIndex++) { // Start at 1 to skip hidden layer's bias node
+                double hiddenNodeValue = 0;
+                for (int inputLayerIndex = 0; inputLayerIndex < _inputNodes.Length; inputLayerIndex++) {
+                    int offset = _inputNodes.Length * (hiddenLayerIndex - 1); // Weight index offset (-1 because the hidden layer loop starts at 1)
+                    hiddenNodeValue += _inputNodes[inputLayerIndex] * _inputWeights[offset + inputLayerIndex];
                 }
 
-                _hiddenNodes[a] = Sigmoid(sum);
+                _hiddenNodes[hiddenLayerIndex] = Sigmoid(hiddenNodeValue);
             }
 
             // Activate output layer
-            for (int a = 0; a < _outputNodes.Length; a++) {
-                double sum = 0;
-                for (int w = 0; w < _hiddenLayerSize; w++) {
-                    int index = _hiddenLayerSize * a + w;
-                    sum += _hiddenWeights[index] * _hiddenNodes[w];
+            for (int outputLayerIndex = 0; outputLayerIndex < _outputNodes.Length; outputLayerIndex++) { // Don't need to start at 1, because output layer doesn't have a bias node
+                double outputNodeValue = 0;
+                for (int hiddenLayerIndex = 0; hiddenLayerIndex < _hiddenNodes.Length; hiddenLayerIndex++) {
+                    int offset = _hiddenNodes.Length * outputLayerIndex; // Weight index offset (no -1 necessary here)
+                    outputNodeValue += _hiddenNodes[hiddenLayerIndex] * _hiddenWeights[offset + hiddenLayerIndex];
                 }
 
-                _outputNodes[a] = Sigmoid(sum);
+                _outputNodes[outputLayerIndex] = Sigmoid(outputNodeValue);
             }
 
             return _outputNodes;
