@@ -5,11 +5,21 @@ namespace Assets.Scripts {
         [SerializeField] public int CreatureAmount = 100;
         [SerializeField] public int FoodAmount = 60;
         [SerializeField] public int Height = 600;
+        [SerializeField] public int TrapAmount = 60;
         [SerializeField] public int Width = 800;
 
         // Start is called before the first frame update
         private void Start() {
-            // Spawn creatures
+            SpawnBorders();
+            SpawnFood();
+            SpawnTraps();
+            SpawnCreatures();
+        }
+
+        // Update is called once per frame
+        private void Update() { }
+
+        private void SpawnCreatures() {
             GameObject createParent = new GameObject("creatures");
             for (int i = 0; i < CreatureAmount; i++) {
                 CreatureBehaviour creature = Instantiate(Resources.Load("Prefabs/creature") as GameObject).GetComponent<CreatureBehaviour>();
@@ -20,8 +30,9 @@ namespace Assets.Scripts {
 
                 creature.transform.SetParent(createParent.transform, true);
             }
+        }
 
-            // Spawn food
+        private void SpawnFood() {
             GameObject foodParent = new GameObject("food");
             for (int i = 0; i < FoodAmount; i++) {
                 FoodBehaviour food = Instantiate(Resources.Load("Prefabs/food") as GameObject).GetComponent<FoodBehaviour>();
@@ -31,8 +42,24 @@ namespace Assets.Scripts {
 
                 food.transform.SetParent(foodParent.transform, true);
             }
+        }
 
-            // Create borders
+        // DEBUG - Spawn border (as trap) to see how creatures react on different colors
+        private void SpawnTraps() {
+            GameObject trapParent = new GameObject("traps");
+            for (int i = 0; i < FoodAmount; i++) {
+                BorderBehaviour trap = Instantiate(Resources.Load("Prefabs/border") as GameObject).GetComponent<BorderBehaviour>();
+
+                Vector2 screenBounds = new Vector2(Width, Height);
+                trap.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y)));
+
+                trap.GetComponent<SpriteRenderer>().color = Color.red; // Make it red
+
+                trap.transform.SetParent(trapParent.transform, true);
+            }
+        }
+
+        private void SpawnBorders() {
             GameObject bordersParent = new GameObject("borders");
             const float borderOffset = 5f / 2f;
             for (float x = 0; x <= Width; x += borderOffset) {
@@ -47,8 +74,5 @@ namespace Assets.Scripts {
                 }
             }
         }
-
-        // Update is called once per frame
-        private void Update() { }
     }
 }

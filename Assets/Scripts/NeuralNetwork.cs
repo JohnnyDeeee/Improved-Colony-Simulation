@@ -4,7 +4,7 @@ using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
     public class NeuralNetwork {
-        private const double EpsilonInit = 1; //0.12; // Seems like a high epsilon makes the output more drastic in comparison with other outputs..
+        private const double EpsilonInit = 2; //0.12; // Seems like a high epsilon makes the output more drastic in comparison with other outputs..
         private readonly int _hiddenLayerSize;
         private readonly double[] _hiddenNodes;
         private readonly double[] _hiddenWeights;
