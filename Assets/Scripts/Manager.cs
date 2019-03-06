@@ -10,23 +10,30 @@ namespace Assets.Scripts {
         // Start is called before the first frame update
         private void Start() {
             // Spawn creatures
+            GameObject createParent = new GameObject("creatures");
             for (int i = 0; i < CreatureAmount; i++) {
                 CreatureBehaviour creature = Instantiate(Resources.Load("Prefabs/creature") as GameObject).GetComponent<CreatureBehaviour>();
-
                 creature.Mass = Random.Range(1f, 10f);
 
-                Vector2 screenBounds = Camera.main.ScreenToWorldPoint(new Vector2(Width, Height));
-                creature.GetComponent<Rigidbody2D>().position = new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y));
+                Vector2 screenBounds = new Vector2(Width, Height);
+                creature.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y)));
+
+                creature.transform.SetParent(createParent.transform, true);
             }
 
             // Spawn food
+            GameObject foodParent = new GameObject("food");
             for (int i = 0; i < FoodAmount; i++) {
                 FoodBehaviour food = Instantiate(Resources.Load("Prefabs/food") as GameObject).GetComponent<FoodBehaviour>();
+
                 Vector2 screenBounds = new Vector2(Width, Height);
                 food.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y)));
+
+                food.transform.SetParent(foodParent.transform, true);
             }
 
             // Create borders
+            GameObject bordersParent = new GameObject("borders");
             const float borderOffset = 5f / 2f;
             for (float x = 0; x <= Width; x += borderOffset) {
                 for (float y = 0; y <= Height; y += borderOffset) {
@@ -35,6 +42,8 @@ namespace Assets.Scripts {
 
                     BorderBehaviour border = Instantiate(Resources.Load("Prefabs/border") as GameObject).GetComponent<BorderBehaviour>();
                     border.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(x, y));
+
+                    border.transform.SetParent(bordersParent.transform, true);
                 }
             }
         }

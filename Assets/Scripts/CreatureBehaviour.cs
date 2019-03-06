@@ -1,6 +1,7 @@
 ﻿using System;
 using Assets.Scripts.Utils;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
     public class CreatureBehaviour : ExposableMonobehaviour {
@@ -29,7 +30,7 @@ namespace Assets.Scripts {
             MaxForce = 0.005f;
             VisionLength = 2f;
             _body = GetComponent<Rigidbody2D>();
-            _brain = new NeuralNetwork(6, 6, 2);
+            _brain = new NeuralNetwork(4, 4, 1);
         }
 
         private void Start() {
@@ -61,20 +62,21 @@ namespace Assets.Scripts {
                 double g = sprite.color.g;
                 double b = sprite.color.b;
 
-                _brainOutput = _brain.FeedForward(new[] {r, g, b, 1, Velocity.x, Velocity.y}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not]
+                _brainOutput = _brain.FeedForward(new[] {r, g, b, 1}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not]
 
                 // Choose to avoid or follow what we see
                 if (_brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f)
                     ApplyForce(AvoidForce(vision.Value.collider.transform.position));
                 else
                     ApplyForce(SeekForce(vision.Value.collider.transform.position));
-            } else { // If we see nothing, go wander
-                _brainOutput = _brain.FeedForward(new[] {0d, 0, 0, 0, Velocity.x, Velocity.y});
 
-                if (_brainOutput[DirectionAdjustmentIndex] > 0.5f)
-                    ApplyForce(WanderForce((float) _brainOutput[DirectionAdjustmentIndex]));
-                else
-                    ApplyForce(WanderForce((float) _brainOutput[DirectionAdjustmentIndex] * -1));
+                // DEBUG - Show if creature is avoiding or following
+                GetComponent<SpriteRenderer>().color = _brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f ? Color.red : Color.green;
+            } else { // If we see nothing, go wander
+                ApplyForce(WanderForce());
+
+                // DEBUG - Show that creature is wandering
+                GetComponent<SpriteRenderer>().color = Color.white;
             }
 
             // Physics Movement
@@ -100,8 +102,6 @@ namespace Assets.Scripts {
         }
 
         public Vector2 SeekForce(Vector2 targetPosition) {
-            Target = targetPosition;
-
             Vector2 direction = (targetPosition - Position).normalized;
             direction *= MaxSpeed;
             Vector2 steering = (direction - Velocity).normalized;
@@ -111,60 +111,50 @@ namespace Assets.Scripts {
         }
 
         public Vector2 AvoidForce(Vector2 avoidPosition) {
-            Vector2 ahead = (Vector2) transform.position + Velocity.normalized * VisionLength;
-            Vector2 avoidanceForce = Vector2.ClampMagnitude((ahead - Velocity).normalized, MaxForce);
+            Vector2 ahead = GetForwardPosition(VisionLength);
+            Vector2 avoidanceForce = Vector2.ClampMagnitude((ahead - avoidPosition).normalized, MaxForce);
 
             return avoidanceForce;
         }
 
-        public Vector2 WanderForce(float directionAdjustment) {
-            Vector2 ahead = GetForwardPosition(2);
-            Vector2 leftEdge = ahead + GetLeftPosition(2, false);
-            Vector2 rightEdge = ahead + GetRightPosition(2, false);
+        public Vector2 WanderForce() {
+            // We can go to the "random" target that was found within vision()
+            return SeekForce(Target);
+        }
 
-            // TODO: Move these vision vectors to the Vision() method
+        public RaycastHit2D? Vision() {
+            // Vision boundary
+            Vector2 ahead = GetForwardPosition(VisionLength);
+            Vector2 leftEdge = ahead + GetLeftPosition(VisionLength, false);
+            Vector2 rightEdge = ahead + GetRightPosition(VisionLength, false);
             Vector2 rightVisionEdge = (leftEdge - rightEdge) / 3 + rightEdge;
             Vector2 leftVisionEdge = (rightEdge - leftEdge) / 3 + leftEdge;
 
             // Get a point in between the vision edges
-            float distanceBetweenEdges = Vector2.Distance(leftVisionEdge, Target);
-            distanceBetweenEdges = Mathf.Clamp01(distanceBetweenEdges); // 0f is all the way left, 1f is all the way right
+            float distanceBetweenLeftAndTarget = Vector2.Distance(leftVisionEdge, Target);
+            distanceBetweenLeftAndTarget = Mathf.Clamp01(distanceBetweenLeftAndTarget); // 0f is all the way left, 1f is all the way right
+            distanceBetweenLeftAndTarget -= Random.Range(-1.0f, 1.0f); // Go in random directions
+            distanceBetweenLeftAndTarget = Mathf.Clamp01(distanceBetweenLeftAndTarget);
 
-            // On each frame make a SMALL adjustment to this steering
-            distanceBetweenEdges -= directionAdjustment;
-            distanceBetweenEdges = Mathf.Clamp01(distanceBetweenEdges); // 0f is all the way left, 1f is all the way right
-            Vector2 pointInBetween = (1f - distanceBetweenEdges) * leftVisionEdge + distanceBetweenEdges * rightVisionEdge;
+            // Get the actual point
+            Target = (1f - distanceBetweenLeftAndTarget) * leftVisionEdge + distanceBetweenLeftAndTarget * rightVisionEdge;
 
-            //// DEBUG - show ahead point
-            ////DebugExtensions.DrawLine(1, _body.position, ahead, 0.15f, Color.red);
-            //DebugExtensions.DrawLine(1, _body.position, GetForwardPosition(VisionLength), 0.15f, Color.red);
-            //DebugExtensions.DrawLine(2, _body.position, leftEdge, 0.15f, Color.blue);
-            //DebugExtensions.DrawLine(3, _body.position, rightEdge, 0.15f, Color.blue);
-            //DebugExtensions.DrawLine(4, _body.position, rightVisionEdge, 0.15f, Color.cyan);
-            //DebugExtensions.DrawLine(5, _body.position, leftVisionEdge, 0.15f, Color.cyan);
-            //DebugExtensions.DrawLine(6, _body.position, pointInBetween, 0.15f, Color.white);
+            // DEBUG
+            //DebugExtensions.DrawLine(1, _body.position, Target, 0.15f, Color.white);
 
-            return SeekForce(pointInBetween);
-        }
-
-        public RaycastHit2D? Vision() {
+            // Check if there is something at that point
             RaycastHit2D? hit = null;
-            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, GetForwardDirection(), VisionLength);
+            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, Target - _body.position, VisionLength);
 
-            // Validate hits
+            // If there is, go validate that hit
             if (hits.Length > 0)
                 foreach (RaycastHit2D _hit in hits) {
-                    if (_hit.collider.gameObject == gameObject)
+                    if (_hit.collider.gameObject == gameObject) // Ignore our own collider
                         continue;
 
                     hit = _hit;
-                    Debug.DrawLine(_body.position, _hit.collider.transform.position, Color.red); // DEBUG Target
                     break; // Only handle the first 'valid' hit
                 }
-
-            // DEBUG - Vision range
-            if (!hit.HasValue)
-                Debug.DrawRay(_body.position, GetForwardDirection() * VisionLength, Color.green);
 
             return hit;
         }

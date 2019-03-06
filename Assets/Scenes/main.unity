@@ -237,7 +237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CreatureAmount: 100
-  FoodAmount: 500
+  FoodAmount: 600
   Height: 600
   Width: 800
 --- !u!4 &1809261607
