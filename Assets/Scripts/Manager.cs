@@ -10,12 +10,12 @@ namespace Assets.Scripts {
         private readonly List<GameObject> _parents = new List<GameObject>();
         [SerializeField] [ExposeProperty] public int CreatureAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int FoodAmount { get; private set; }
-        [SerializeField] [ExposeProperty] public int Height { get; private set; }
         [SerializeField] [ExposeProperty] public int TrapAmount { get; private set; }
+        [SerializeField] [ExposeProperty] public int Height { get; private set; }       
         [SerializeField] [ExposeProperty] public int Width { get; private set; }
         [SerializeField] [ExposeProperty] public float GameTime { get; private set; }
         [SerializeField] [ExposeProperty] public int GameLoopInSeconds { get; private set; }
-        [SerializeField] [ExposeProperty] public int Seed { get; private set; }
+        [SerializeField] [ExposeProperty] public Random.State Seed { get; private set; }
 
         private void Awake() {
             CreatureAmount = 100;
@@ -23,13 +23,13 @@ namespace Assets.Scripts {
             TrapAmount = 60;
             Width = 800;
             Height = 600;
-            GameLoopInSeconds = 60;
-            Seed = (int)DateTime.Now.Ticks; // Keep the seed the same for the whole game
+            GameLoopInSeconds = 5;
+            Seed = Random.state; // Keep the seed the same for the whole game
         }
 
         // Start is called before the first frame update
         private void Start() {
-            Random.InitState(Seed);
+            Random.state = Seed;
 
             SpawnBorders();
             SpawnFood();

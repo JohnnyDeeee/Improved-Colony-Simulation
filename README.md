@@ -17,7 +17,7 @@ I'm going to try and write my own physics to reduce overhead and increase perfor
     - [ ] Vision length
     - [ ] Color (aesthetic, to see which creatures are from the same familly)
   - [ ] Fitness function f(age)
-    - [ ] > So add age, decrease over time
+    - [x] So add age, decrease over time
     - [ ] Also add "amount of food carrying"
       - [ ] This decreases over time (or distance travelled?)
       - [ ] Increases when eating food
@@ -25,11 +25,12 @@ I'm going to try and write my own physics to reduce overhead and increase perfor
       - [ ] When it reaches 0 you die
       - [ ] Add this to the brain inputs (so decisions can be made according to your food levels)
   - [ ] Selection: https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)
-    - [ ] Every round takes X seconds in-game time
+    - [x] Every round takes X seconds in-game time
   - [ ] Single point crossover: https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)
   - [ ] Mutation: https://en.wikipedia.org/wiki/Mutation_(genetic_algorithm)
 
 ## DONE
+- [x] Added a seed to Random class. Sadly this does not make the physics completely deterministic (probably has to do with floats not being deterministic)
 - [x] Improve vision, create a "cone" \ / instead of a single straight line (see CreatureBehaviour.cs 125 - vision edges)
   - [x] Hopefully this will also fix the avoid force so that they wont collide while trying to avoid, if not also fix this
 - [x] Added NN input [..., 0-1 Bool wether we see something or not] this is to make a difference between white (RGB,000) and seeing "nothing" (RGB,-1-1-1) which gets translated to 000 by the NN
