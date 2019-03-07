@@ -21,6 +21,8 @@ namespace Assets.Scripts {
         [ExposeProperty] [SerializeField] public Vector2 Position { get; set; }
         [ExposeProperty] [SerializeField] public bool Dead { get; set; }
         [ExposeProperty] [SerializeField] public Vector2 Target { get; set; }
+        [ExposeProperty] [SerializeField] public int Age { get; private set; }
+        private Manager _manager;
 
         // Start is called before the first frame update
         private void Awake() {
@@ -36,6 +38,7 @@ namespace Assets.Scripts {
         private void Start() {
             Position = _body.position;
             Target = GetForwardPosition(VisionLength);
+            _manager = GameObject.FindObjectOfType<Manager>();
         }
 
         // Update is called once per frame
@@ -45,6 +48,8 @@ namespace Assets.Scripts {
 
             if (_target.HasValue)
                 ApplyForce(_target.Value);
+
+            Age = Mathf.FloorToInt(_manager.GameTime);
 
             // Display
             transform.localScale = new Vector3(Mass, Mass, 0);

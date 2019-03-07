@@ -1,5 +1,6 @@
 ﻿using Assets.Scripts.Utils;
 using UnityEditor;
+using UnityEngine;
 
 namespace Assets.Editor {
     [CustomEditor(typeof(ExposableMonobehaviour), true)]
@@ -19,6 +20,8 @@ namespace Assets.Editor {
                 return;
             DrawDefaultInspector();
             ExposeProperties.Expose(_mFields);
+
+            EditorUtility.SetDirty(target); // Makes sure the inspector will update every frame
         }
     }
 }

@@ -17,7 +17,15 @@ I'm going to try and write my own physics to reduce overhead and increase perfor
     - [ ] Vision length
     - [ ] Color (aesthetic, to see which creatures are from the same familly)
   - [ ] Fitness function f(age)
+    - [ ] > So add age, decrease over time
+    - [ ] Also add "amount of food carrying"
+      - [ ] This decreases over time (or distance travelled?)
+      - [ ] Increases when eating food
+        - [ ] Should we also increase mass ??
+      - [ ] When it reaches 0 you die
+      - [ ] Add this to the brain inputs (so decisions can be made according to your food levels)
   - [ ] Selection: https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)
+    - [ ] Every round takes X seconds in-game time
   - [ ] Single point crossover: https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)
   - [ ] Mutation: https://en.wikipedia.org/wiki/Mutation_(genetic_algorithm)
 

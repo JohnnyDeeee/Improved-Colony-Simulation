@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Assets.Scripts.Utils;
 using UnityEditor;
@@ -13,54 +14,53 @@ namespace Assets.Editor {
             EditorGUILayout.BeginVertical(emptyOptions);
             foreach (var field in properties) {
                 EditorGUILayout.BeginHorizontal(emptyOptions);
-                if (field.Type == SerializedPropertyType.Integer) {
-                    var oldValue = (int) field.GetValue();
-                    var newValue = EditorGUILayout.IntField(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.Float) {
-                    var oldValue = (float) field.GetValue();
-                    var newValue = EditorGUILayout.FloatField(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.Boolean) {
-                    var oldValue = (bool) field.GetValue();
-                    var newValue = EditorGUILayout.Toggle(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.String) {
-                    var oldValue = (string) field.GetValue();
-                    var newValue = EditorGUILayout.TextField(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.Vector2) {
-                    var oldValue = (Vector2) field.GetValue();
-                    var newValue = EditorGUILayout.Vector2Field(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.Vector3) {
-                    var oldValue = (Vector3) field.GetValue();
-                    var newValue = EditorGUILayout.Vector3Field(field.Name, oldValue, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.Enum) {
-                    var oldValue = (Enum) field.GetValue();
-                    var newValue = EditorGUILayout.EnumPopup(field.Name, oldValue, emptyOptions);
-                    if (!Equals(oldValue, newValue))
-                        field.SetValue(newValue);
-                }
-                else if (field.Type == SerializedPropertyType.ObjectReference) {
-                    var oldValue = (Object) field.GetValue();
-                    var newValue =
-                        EditorGUILayout.ObjectField(field.Name, oldValue, field.Info.PropertyType, false, emptyOptions);
-                    if (oldValue != newValue)
-                        field.SetValue(newValue);
+
+                bool isReadOnly = field.Info.GetSetMethod() == null;
+
+                if (isReadOnly)
+                    EditorGUILayout.LabelField(field.Name, field.GetValue().ToString(), emptyOptions);
+                else {
+                    if (field.Type == SerializedPropertyType.Integer) {
+                        var oldValue = (int) field.GetValue();
+                        var newValue = EditorGUILayout.IntField(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.Float) {
+                        var oldValue = (float) field.GetValue();
+                        var newValue = EditorGUILayout.FloatField(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.Boolean) {
+                        var oldValue = (bool) field.GetValue();
+                        var newValue = EditorGUILayout.Toggle(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.String) {
+                        var oldValue = (string) field.GetValue();
+                        var newValue = EditorGUILayout.TextField(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.Vector2) {
+                        var oldValue = (Vector2) field.GetValue();
+                        var newValue = EditorGUILayout.Vector2Field(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.Vector3) {
+                        var oldValue = (Vector3) field.GetValue();
+                        var newValue = EditorGUILayout.Vector3Field(field.Name, oldValue, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.Enum) {
+                        var oldValue = (Enum) field.GetValue();
+                        var newValue = EditorGUILayout.EnumPopup(field.Name, oldValue, emptyOptions);
+                        if (!Equals(oldValue, newValue))
+                            field.SetValue(newValue);
+                    } else if (field.Type == SerializedPropertyType.ObjectReference) {
+                        var oldValue = (Object) field.GetValue();
+                        var newValue = EditorGUILayout.ObjectField(field.Name, oldValue, field.Info.PropertyType, false, emptyOptions);
+                        if (oldValue != newValue)
+                            field.SetValue(newValue);
+                    }
                 }
 
                 EditorGUILayout.EndHorizontal();
@@ -130,10 +130,16 @@ namespace Assets.Editor {
         }
 
         public object GetValue() {
+            if (_getter == null)
+                return null;
+
             return _getter.Invoke(_obj, null);
         }
 
         public void SetValue(object value) {
+            if (_setter == null)
+                return;
+
             _setter.Invoke(_obj, new[] {value});
         }
 
