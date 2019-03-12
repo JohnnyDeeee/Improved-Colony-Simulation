@@ -24,13 +24,14 @@ namespace Assets.Scripts {
                 transform.position += new Vector3(Input.GetAxisRaw("Mouse X") * Time.deltaTime * DragSpeed * -1,
                     Input.GetAxisRaw("Mouse Y") * Time.deltaTime * DragSpeed * -1, 0f);
 
-            // Scroll forward
-            if (Input.GetAxis("Mouse ScrollWheel") > 0 && CurrentZoom > MinZoom)
-                ZoomToPosition(Camera.main.ScreenToWorldPoint(Input.mousePosition), ZoomSpeed);
+            // TODO: Turn zooming on when bug is fixed where object placement is done relative to zoom
+            //// Scroll forward
+            //if (Input.GetAxis("Mouse ScrollWheel") > 0 && CurrentZoom > MinZoom)
+            //    ZoomToPosition(Camera.main.ScreenToWorldPoint(Input.mousePosition), ZoomSpeed);
 
-            // Scroll back
-            if (Input.GetAxis("Mouse ScrollWheel") < 0 && CurrentZoom < MaxZoom)
-                ZoomToPosition(Camera.main.ScreenToWorldPoint(Input.mousePosition), ZoomSpeed * -1f);
+            //// Scroll back
+            //if (Input.GetAxis("Mouse ScrollWheel") < 0 && CurrentZoom < MaxZoom)
+            //    ZoomToPosition(Camera.main.ScreenToWorldPoint(Input.mousePosition), ZoomSpeed * -1f);
 
             DragSpeed = CurrentZoom / 0.2f;
             ZoomSpeed = CurrentZoom * 0.1f;

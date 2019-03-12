@@ -6,12 +6,12 @@ using Random = UnityEngine.Random;
 namespace Assets.Scripts {
     public class CreatureBehaviour : ExposableMonobehaviour {
         private const int ChanceToFollowOrAvoidIndex = 0; // Output 0 of the brain
-        private const int DirectionAdjustmentIndex = 1; // Output 1 of the brain
         private readonly Vector2? _target = null;
         private Rigidbody2D _body;
         private NeuralNetwork _brain;
         [SerializeField] private double[] _brainOutput;
-        [ExposeProperty] [SerializeField] public float Mass { get; set; }
+        [ExposeProperty] [SerializeField] public float BaseMass { get; set; }
+        [ExposeProperty] [SerializeField] public float Mass => BaseMass + Food;
         [ExposeProperty] [SerializeField] public float MaxSpeed { get; set; }
         [ExposeProperty] [SerializeField] public float MaxForce { get; set; }
         [ExposeProperty] [SerializeField] public float Rotation { get; set; }
@@ -22,40 +22,61 @@ namespace Assets.Scripts {
         [ExposeProperty] [SerializeField] public bool Dead { get; set; }
         [ExposeProperty] [SerializeField] public Vector2 Target { get; set; }
         [ExposeProperty] [SerializeField] public int Age { get; private set; }
+        [ExposeProperty] [SerializeField] public float Food { get; private set; }
+        [ExposeProperty] [SerializeField] public float FoodDepletionMultiplier { get; private set; }
         private Manager _manager;
 
         // Start is called before the first frame update
         private void Awake() {
             // Defaults
-            Mass = 1f;
-            MaxSpeed = 0.1f;
-            MaxForce = 0.005f;
+            MaxSpeed = 0.3f;
+            MaxForce = 0.01f;
             VisionLength = 2f;
+            FoodDepletionMultiplier = 0.1f;
             _body = GetComponent<Rigidbody2D>();
-            _brain = new NeuralNetwork(4, 4, 1);
+            _brain = new NeuralNetwork(5, 5, 1);
+            BaseMass = 1f;
         }
 
         private void Start() {
             Position = _body.position;
+            transform.position = _body.position;
+
+            Rotation = _body.rotation;
+            transform.Rotate(0f, 0f, _body.rotation);
+
+            transform.localScale = new Vector3(Mass, Mass, 0);
+
             Target = GetForwardPosition(VisionLength);
             _manager = GameObject.FindObjectOfType<Manager>();
+            Food = BaseMass;
         }
 
         // Update is called once per frame
         private void Update() {
-            if (Dead)
+            if (Dead) {
                 enabled = false; // This disables the Update() and FixedUpdate() function
+                return;
+            }
 
             if (_target.HasValue)
                 ApplyForce(_target.Value);
 
             Age = Mathf.FloorToInt(_manager.GameTime);
 
+            if (Food <= 0)
+                Die();
+
             // Display
             transform.localScale = new Vector3(Mass, Mass, 0);
         }
 
         private void FixedUpdate() {
+            if (Dead) {
+                enabled = false; // This disables the Update() and FixedUpdate() function
+                return;
+            }
+
             RaycastHit2D? vision = Vision(); // Always register target
 
             if (vision.HasValue) { // If we see something, go follow/avoid
@@ -67,7 +88,7 @@ namespace Assets.Scripts {
                 double g = sprite.color.g;
                 double b = sprite.color.b;
 
-                _brainOutput = _brain.FeedForward(new[] {r, g, b, 1}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not]
+                _brainOutput = _brain.FeedForward(new[] {r, g, b, 1, Mass}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not, ~ Mass amount]
 
                 // Choose to avoid or follow what we see
                 if (_brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f)
@@ -99,6 +120,10 @@ namespace Assets.Scripts {
             Rotation = (float) (Mathf.Atan2(Position.y - newPosition.y, Position.x - newPosition.x) + Math.PI / 2);
 
             _body.rotation = Rotation * Mathf.Rad2Deg;
+
+            // Food depletion
+            float distanceTraveled = Vector2.Distance(_body.position, (Position - Velocity));
+            Food -= distanceTraveled * FoodDepletionMultiplier;
         }
 
         public void ApplyForce(Vector2 force) {
@@ -166,6 +191,12 @@ namespace Assets.Scripts {
 
         public void Die() {
             Dead = true;
+            Color color = GetComponent<SpriteRenderer>().color;
+            GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, 0.2f);
+        }
+
+        public void AddFood(int amount) {
+            Food += amount;
         }
 
         private Vector2 GetForwardDirection() {

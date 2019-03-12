@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Utils;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -19,11 +20,11 @@ namespace Assets.Scripts {
 
         private void Awake() {
             CreatureAmount = 100;
-            FoodAmount = 60;
-            TrapAmount = 60;
+            FoodAmount = 400;
+            TrapAmount = 0;//60;
             Width = 800;
             Height = 600;
-            GameLoopInSeconds = 5;
+            GameLoopInSeconds = Int32.MaxValue;
             Seed = Random.state; // Keep the seed the same for the whole game
         }
 
@@ -65,10 +66,11 @@ namespace Assets.Scripts {
             _parents.Add(creaturesParent);
             for (int i = 0; i < CreatureAmount; i++) {
                 CreatureBehaviour creature = Instantiate(Resources.Load("Prefabs/creature") as GameObject).GetComponent<CreatureBehaviour>();
-                creature.Mass = Random.Range(1f, 10f);
+                creature.BaseMass = Random.Range(1f, 10f);
 
                 Vector2 screenBounds = new Vector2(Width, Height);
                 creature.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y)));
+                creature.transform.Rotate(0, 0, Random.Range(0, 360));
 
                 creature.transform.SetParent(creaturesParent.transform, true);
             }

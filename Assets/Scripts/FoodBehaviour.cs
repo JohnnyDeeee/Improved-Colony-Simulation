@@ -10,8 +10,11 @@ namespace Assets.Scripts {
         public void Update() { }
 
         public void OnCollisionEnter2D(Collision2D col) {
-            if(col.collider.gameObject.GetComponent<CreatureBehaviour>() != null)
+            CreatureBehaviour creature = col.collider.gameObject.GetComponent<CreatureBehaviour>();
+            if (creature != null) {
+                creature.AddFood(1);
                 Destroy(gameObject);
+            }
         }
     }
 }
