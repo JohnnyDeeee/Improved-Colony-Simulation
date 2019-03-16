@@ -1,21 +1,75 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Utils;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
+    public class Genome {
+        [ExposeProperty] [SerializeField] public float BaseMass { get; set; }
+        [ExposeProperty] [SerializeField] public float VisionLength { get; set; }
+        [ExposeProperty] [SerializeField] public NeuralNetwork Brain { get; set; }
+
+        public BitArray GetGenome() {
+            byte[] baseMassBytes = BitConverter.GetBytes(BaseMass);
+            byte[] visionLengthBytes = BitConverter.GetBytes(VisionLength);
+            byte[] brainInputBytes = Brain.GetInputWeights().SelectMany(x => BitConverter.GetBytes(x)).ToArray();
+
+            List<byte> bytes = new List<byte>(baseMassBytes.Concat(visionLengthBytes).Concat(brainInputBytes));
+
+            return new BitArray(bytes.ToArray());
+        }
+
+        public void SetGenome(BitArray genome) {
+            // Bits to bytes
+            byte[] bytes = new byte[genome.Length / 8];
+            genome.CopyTo(bytes, 0);
+            List<byte> byteList = bytes.ToList();
+
+            // BaseMass - float (4 bytes)
+            byte[] baseMassBytes = byteList.GetRange(0, 4).ToArray();
+            byteList.RemoveRange(0, 4);
+            BaseMass = BitConverter.ToSingle(baseMassBytes, 0);
+            BaseMass = Mathf.Clamp(BaseMass, 1f, 50f);
+
+            // VisionLength - float (4 bytes)
+            byte[] visionLengthBytes = byteList.GetRange(0, 4).ToArray();
+            byteList.RemoveRange(0, 4);
+            VisionLength = BitConverter.ToSingle(visionLengthBytes, 0);
+            VisionLength = Mathf.Clamp(VisionLength, 0.1f, 25f);
+
+            // Brain Inputs - double[] (8 bytes per double)
+            byte[] brainBytes = byteList.GetRange(0, Brain.GetInputWeights().Length * 8).ToArray();
+            byteList.RemoveRange(0, Brain.GetInputWeights().Length * 8);
+            double[] inputWeights = new double[brainBytes.Length / 8];
+            for (int i = 0; i < inputWeights.Length; i++) {
+                inputWeights[i] = BitConverter.ToDouble(brainBytes, i * 8);
+            }
+            Brain = new NeuralNetwork(Brain.GetInputLayerSize(), Brain.GetHiddenLayerSize(), Brain.GetOutputLayerSize(), inputWeights);
+        }
+
+        public override string ToString() {
+            return $"BaseMass: {BaseMass}, VisionLength: {VisionLength}, BrainInputs: {Brain.ToString()}";
+        }
+    }
+
     public class CreatureBehaviour : ExposableMonobehaviour {
-        private const int ChanceToFollowOrAvoidIndex = 0; // Output 0 of the brain
+        private const int ChanceToFollowOrAvoidIndex = 0; // Output 0 of the brain // TODO: Put the output in a sep class
         private readonly Vector2? _target = null;
         private Rigidbody2D _body;
-        private NeuralNetwork _brain;
+        private Manager _manager;
         [SerializeField] private double[] _brainOutput;
-        [ExposeProperty] [SerializeField] public float BaseMass { get; set; }
-        [ExposeProperty] [SerializeField] public float Mass => BaseMass + Food;
-        [ExposeProperty] [SerializeField] public float MaxSpeed { get; set; }
-        [ExposeProperty] [SerializeField] public float MaxForce { get; set; }
+        [SerializeField] public readonly Genome Genome = new Genome();
+        [ExposeProperty] [SerializeField] public float Mass => Genome.BaseMass + Food;
+
+        [ExposeProperty] [SerializeField] public float MassDebug {
+            get { return Mass; }
+            set { }
+        }
+
         [ExposeProperty] [SerializeField] public float Rotation { get; set; }
-        [ExposeProperty] [SerializeField] public float VisionLength { get; set; }
         [ExposeProperty] [SerializeField] public Vector2 Acceleration { get; set; }
         [ExposeProperty] [SerializeField] public Vector2 Velocity { get; set; }
         [ExposeProperty] [SerializeField] public Vector2 Position { get; set; }
@@ -24,18 +78,21 @@ namespace Assets.Scripts {
         [ExposeProperty] [SerializeField] public int Age { get; private set; }
         [ExposeProperty] [SerializeField] public float Food { get; private set; }
         [ExposeProperty] [SerializeField] public float FoodDepletionMultiplier { get; private set; }
-        private Manager _manager;
+        [ExposeProperty] [SerializeField] public float MaxSpeed { get; set; }
+        [ExposeProperty] [SerializeField] public float MaxForce { get; set; }
+        [ExposeProperty] [SerializeField] public float Fitness => Age;
+        [ExposeProperty] [SerializeField] public float NormalizedFitness { get; set; }
+        [ExposeProperty] [SerializeField] public float AccumulatedNormalizedFitness { get; set; }
 
         // Start is called before the first frame update
         private void Awake() {
             // Defaults
-            MaxSpeed = 0.3f;
-            MaxForce = 0.01f;
-            VisionLength = 2f;
+            Age = 1;
             FoodDepletionMultiplier = 0.1f;
             _body = GetComponent<Rigidbody2D>();
-            _brain = new NeuralNetwork(5, 5, 1);
-            BaseMass = 1f;
+            MaxSpeed = 0.3f;
+            MaxForce = 0.01f;
+            Genome.Brain = new NeuralNetwork(5, 5, 1);
         }
 
         private void Start() {
@@ -47,9 +104,9 @@ namespace Assets.Scripts {
 
             transform.localScale = new Vector3(Mass, Mass, 0);
 
-            Target = GetForwardPosition(VisionLength);
-            _manager = GameObject.FindObjectOfType<Manager>();
-            Food = BaseMass;
+            Target = GetForwardPosition(Genome.VisionLength);
+            _manager = FindObjectOfType<Manager>();
+            Food = Genome.BaseMass;
         }
 
         // Update is called once per frame
@@ -88,7 +145,7 @@ namespace Assets.Scripts {
                 double g = sprite.color.g;
                 double b = sprite.color.b;
 
-                _brainOutput = _brain.FeedForward(new[] {r, g, b, 1, Mass}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not, ~ Mass amount]
+                _brainOutput = Genome.Brain.FeedForward(new[] {r, g, b, 1, Mass}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not, ~ Mass amount]
 
                 // Choose to avoid or follow what we see
                 if (_brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f)
@@ -122,7 +179,7 @@ namespace Assets.Scripts {
             _body.rotation = Rotation * Mathf.Rad2Deg;
 
             // Food depletion
-            float distanceTraveled = Vector2.Distance(_body.position, (Position - Velocity));
+            float distanceTraveled = Vector2.Distance(_body.position, Position - Velocity);
             Food -= distanceTraveled * FoodDepletionMultiplier;
         }
 
@@ -141,7 +198,7 @@ namespace Assets.Scripts {
         }
 
         public Vector2 AvoidForce(Vector2 avoidPosition) {
-            Vector2 ahead = GetForwardPosition(VisionLength);
+            Vector2 ahead = GetForwardPosition(Genome.VisionLength);
             Vector2 avoidanceForce = Vector2.ClampMagnitude((ahead - avoidPosition).normalized, MaxForce);
 
             return avoidanceForce;
@@ -154,9 +211,9 @@ namespace Assets.Scripts {
 
         public RaycastHit2D? Vision() {
             // Vision boundary
-            Vector2 ahead = GetForwardPosition(VisionLength);
-            Vector2 leftEdge = ahead + GetLeftPosition(VisionLength, false);
-            Vector2 rightEdge = ahead + GetRightPosition(VisionLength, false);
+            Vector2 ahead = GetForwardPosition(Genome.VisionLength);
+            Vector2 leftEdge = ahead + GetLeftPosition(Genome.VisionLength, false);
+            Vector2 rightEdge = ahead + GetRightPosition(Genome.VisionLength, false);
             Vector2 rightVisionEdge = (leftEdge - rightEdge) / 3 + rightEdge;
             Vector2 leftVisionEdge = (rightEdge - leftEdge) / 3 + leftEdge;
 
@@ -174,7 +231,7 @@ namespace Assets.Scripts {
 
             // Check if there is something at that point
             RaycastHit2D? hit = null;
-            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, Target - _body.position, VisionLength);
+            RaycastHit2D[] hits = Physics2D.RaycastAll(_body.position, Target - _body.position, Genome.VisionLength);
 
             // If there is, go validate that hit
             if (hits.Length > 0)

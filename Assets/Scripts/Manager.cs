@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Utils;
@@ -9,6 +10,7 @@ namespace Assets.Scripts {
     public class Manager : ExposableMonobehaviour {
         private bool _isReady;
         private readonly List<GameObject> _parents = new List<GameObject>();
+        private readonly List<CreatureBehaviour> _creatures = new List<CreatureBehaviour>();
         [SerializeField] [ExposeProperty] public int CreatureAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int FoodAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int TrapAmount { get; private set; }
@@ -24,20 +26,13 @@ namespace Assets.Scripts {
             TrapAmount = 0;//60;
             Width = 800;
             Height = 600;
-            GameLoopInSeconds = Int32.MaxValue;
+            GameLoopInSeconds = 60;
             Seed = Random.state; // Keep the seed the same for the whole game
         }
 
         // Start is called before the first frame update
         private void Start() {
-            Random.state = Seed;
-
-            SpawnBorders();
-            SpawnFood();
-            SpawnTraps();
-            SpawnCreatures();
-
-            _isReady = true;
+            SpawnWrapper();
         }
 
         // Update is called once per frame
@@ -50,29 +45,54 @@ namespace Assets.Scripts {
             if ((int) GameTime == GameLoopInSeconds) {
                 GameTime = 0;
                 _isReady = false;
+
+                // Genetic Algorithm()
+                CreatureBehaviour[] parents = GeneticAlgorithm.GetParents(_creatures).ToArray();
+                BitArray newGenome = GeneticAlgorithm.Crossover(parents[0].Genome.GetGenome(), parents[1].Genome.GetGenome());
+
                 Cleanup();
-                // TODO: Genetic Algorithm()
-                // TODO: Start() with new genomes
-                Start();
+                SpawnWrapper(newGenome);
             }
+        }
+
+        private void SpawnWrapper(BitArray newGenome = null) {
+            Random.state = Seed;
+
+            SpawnBorders();
+            SpawnFood();
+            SpawnTraps();
+            SpawnCreatures(newGenome);
+
+            _isReady = true;
         }
 
         private void Cleanup() {
             foreach (GameObject parent in _parents) Destroy(parent);
+            _parents.Clear();
+            _creatures.Clear();
         }
 
-        private void SpawnCreatures() {
+        private void SpawnCreatures(BitArray newGenome) {
             GameObject creaturesParent = new GameObject("creatures");
             _parents.Add(creaturesParent);
             for (int i = 0; i < CreatureAmount; i++) {
                 CreatureBehaviour creature = Instantiate(Resources.Load("Prefabs/creature") as GameObject).GetComponent<CreatureBehaviour>();
-                creature.BaseMass = Random.Range(1f, 10f);
+
+                if (newGenome != null) {
+                    newGenome = GeneticAlgorithm.Mutation(newGenome);
+                    creature.Genome.SetGenome(newGenome);
+                } else {
+                    creature.Genome.BaseMass = Random.Range(1f, 10f);
+                    creature.Genome.VisionLength = 2f;
+                }
 
                 Vector2 screenBounds = new Vector2(Width, Height);
                 creature.transform.position = Camera.main.ScreenToWorldPoint(new Vector2(Random.Range(0f, screenBounds.x), Random.Range(0f, screenBounds.y)));
                 creature.transform.Rotate(0, 0, Random.Range(0, 360));
 
                 creature.transform.SetParent(creaturesParent.transform, true);
+
+                _creatures.Add(creature);
             }
         }
 

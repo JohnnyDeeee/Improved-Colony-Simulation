@@ -111,5 +111,10 @@ namespace Assets.Scripts {
         public double[] GetInputWeights() {
             return _inputWeights;
         }
+
+        public override string ToString() {
+            string inputWeights = string.Join(",", _inputWeights);
+            return $"Input Size: {_inputLayerSize}, Hidden Size: {_hiddenLayerSize}, Output Size: {_outputLayerSize}, Input Weights: {inputWeights}";
+        }
     }
 }

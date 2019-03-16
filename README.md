@@ -9,20 +9,24 @@ Also i was using the Physics Engine in Unity and thus the performance was really
 I'm going to try and write my own physics to reduce overhead and increase performance (i hope). Also i'm going to focus more on core features instead of making everything big and fancy.
 
 ## TODO
+- [ ] Build a graph that captures every round and shows if we are actually improving or not
+- [ ] Fix: Random stutters
+- [ ] Fix: GeneticAlgorithm takes waaay too long to finish
 - [ ] Objects are placed relative to zoom value; when zooming in before new round starts, you'll see the objects are placed different than before
 - [ ] I think the difference of brain outputs, between different colors, is not great enough (maybe this can be fixed by making the weights 'bigger' ?)
 - [ ] Make creatures more focused on a target when they want to follow (now vision() keeps going on and could wander off while following)
-- [ ] Genetic Algorithm
-  - [ ] Genomes
-    - [ ] Mass (fat parents get fat kids)
-    - [ ] Vision length
-    - [ ] Color (aesthetic, to see which creatures are from the same familly)
-  - [ ] Fitness function f(age) or f(food) ..?
-  - [ ] Selection: https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)
-  - [ ] Single point crossover: https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)
-  - [ ] Mutation: https://en.wikipedia.org/wiki/Mutation_(genetic_algorithm)
+- [ ] Add Color to genomes? (aesthetic, to see which creatures are from the same familly)
+
 
 ## DONE
+- [x] > Genetic Algorithm
+  - [x] Genomes
+    - [x] Mass (fat parents get fat kids)
+    - [x] Vision length
+  - [x] Fitness function f(age)
+  - [x] Selection: https://en.wikipedia.org/wiki/Selection_(genetic_algorithm)
+  - [x] Single point crossover: https://en.wikipedia.org/wiki/Crossover_(genetic_algorithm)
+  - [x] Mutation: https://en.wikipedia.org/wiki/Mutation_(genetic_algorithm)
 - [x] Every round takes X seconds in-game time, after that a new round starts
 - [x] Add age, decrease over time
 - [x] Also add "amount of food carrying"
