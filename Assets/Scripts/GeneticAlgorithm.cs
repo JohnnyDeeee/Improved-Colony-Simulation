@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Assets.Scripts {
     public static class GeneticAlgorithm {
-        public static float MutationProbability = 1f;//0.01f;
+        public static float MutationProbability = 0.01f;
 
         public static CreatureBehaviour[] GetParents(List<CreatureBehaviour> candidates) {
             CreatureBehaviour parent1 = CalculateWinner(candidates);

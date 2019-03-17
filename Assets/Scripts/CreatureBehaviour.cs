@@ -88,7 +88,7 @@ namespace Assets.Scripts {
         private void Awake() {
             // Defaults
             Age = 1;
-            FoodDepletionMultiplier = 0.1f;
+            FoodDepletionMultiplier = 0.2f;
             _body = GetComponent<Rigidbody2D>();
             MaxSpeed = 0.3f;
             MaxForce = 0.01f;
