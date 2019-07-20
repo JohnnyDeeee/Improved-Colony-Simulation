@@ -9,7 +9,7 @@ Also i was using the Physics Engine in Unity and thus the performance was really
 I'm going to try and write my own physics to reduce overhead and increase performance (i hope). Also i'm going to focus more on core features instead of making everything big and fancy.
 
 ## TODO
-- [ ] Build a graph that captures every round and shows if we are actually improving or not
+- [ ] Fix: Genetic algorithm doesn't seem to be improving over time..
 - [ ] Fix: Random stutters
 - [ ] Fix: GeneticAlgorithm takes waaay too long to finish
 - [ ] Objects are placed relative to zoom value; when zooming in before new round starts, you'll see the objects are placed different than before
@@ -19,7 +19,8 @@ I'm going to try and write my own physics to reduce overhead and increase perfor
 
 
 ## DONE
-- [x] > Genetic Algorithm
+- [x] Build a graph that captures every round and shows if we are actually improving or not
+- [x] Genetic Algorithm
   - [x] Genomes
     - [x] Mass (fat parents get fat kids)
     - [x] Vision length

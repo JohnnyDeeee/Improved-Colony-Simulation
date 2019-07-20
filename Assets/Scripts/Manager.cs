@@ -7,10 +7,15 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
+    public static class Events {
+        public static int CREATURE_DIES = 1;
+    }
+
     public class Manager : ExposableMonobehaviour {
         private bool _isReady;
         private readonly List<GameObject> _parents = new List<GameObject>();
         private readonly List<CreatureBehaviour> _creatures = new List<CreatureBehaviour>();
+        private int _deathCount;
         [SerializeField] [ExposeProperty] public int CreatureAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int FoodAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int TrapAmount { get; private set; }
@@ -18,16 +23,21 @@ namespace Assets.Scripts {
         [SerializeField] [ExposeProperty] public int Width { get; private set; }
         [SerializeField] [ExposeProperty] public float GameTime { get; private set; }
         [SerializeField] [ExposeProperty] public int GameLoopInSeconds { get; private set; }
+        [SerializeField] [ExposeProperty] public int GameLoopAmount { get; private set; }
         [SerializeField] [ExposeProperty] public Random.State Seed { get; private set; }
 
         private void Awake() {
             CreatureAmount = 100;
             FoodAmount = 400;
-            TrapAmount = 0;//60;
+            TrapAmount = 300;
             Width = 800;
             Height = 600;
-            GameLoopInSeconds = 60;
+            GameLoopInSeconds = 30;
+            GameLoopAmount = 1;
             Seed = Random.state; // Keep the seed the same for the whole game
+
+            // Add origin point for graph
+            FindObjectOfType<Graph>().AddPoints(new Vector2[1] { new Vector2(0,0) });
         }
 
         // Start is called before the first frame update
@@ -42,13 +52,19 @@ namespace Assets.Scripts {
 
             GameTime += Time.deltaTime;
 
-            if ((int) GameTime == GameLoopInSeconds) {
+            if ((int) GameTime >= GameLoopInSeconds || _deathCount == _creatures.Count) {
+                GameLoopAmount += 1;
                 GameTime = 0;
                 _isReady = false;
+                _deathCount = 0;
 
                 // Genetic Algorithm()
                 CreatureBehaviour[] parents = GeneticAlgorithm.GetParents(_creatures).ToArray();
                 BitArray newGenome = GeneticAlgorithm.Crossover(parents[0].Genome.GetGenome(), parents[1].Genome.GetGenome());
+
+                // Add fitness value to graph
+                float pointScale = 1.0f;
+                FindObjectOfType<Graph>().AddPoints(new Vector2[1] { new Vector2(GameLoopAmount * pointScale, parents[0].Fitness * pointScale) });
 
                 Cleanup();
                 SpawnWrapper(newGenome);
@@ -140,6 +156,11 @@ namespace Assets.Scripts {
                     border.transform.SetParent(bordersParent.transform, true);
                 }
             }
+        }
+
+        public void SendEvent(int _event) {
+            if (_event == Events.CREATURE_DIES)
+                _deathCount += 1;
         }
     }
 }

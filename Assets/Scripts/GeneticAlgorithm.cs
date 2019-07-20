@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Assets.Scripts {
     public static class GeneticAlgorithm {
-        public static float MutationProbability = 1f;//0.01f;
+        public static float MutationProbability = 0.01f;
 
         public static CreatureBehaviour[] GetParents(List<CreatureBehaviour> candidates) {
             CreatureBehaviour parent1 = CalculateWinner(candidates);
@@ -60,9 +60,14 @@ namespace Assets.Scripts {
         private static CreatureBehaviour ChooseWinner(CreatureBehaviour[] candidates) {
             float random = Random.value;
             CreatureBehaviour winner = null;
-            foreach (CreatureBehaviour candidate in candidates.Reverse()) // Wikipedia doesn't mention reversing the list, but if we don't then we will always pick the latest one in the list (with the highest accNormFitness)
-                if (candidate.AccumulatedNormalizedFitness >= random)
+            //foreach (CreatureBehaviour candidate in candidates.Reverse()) // Wikipedia doesn't mention reversing the list, but if we don't then we will always pick the latest one in the list (with the highest accNormFitness)
+            //    if (candidate.AccumulatedNormalizedFitness >= random)
+            //        winner = candidate;
+            foreach (CreatureBehaviour candidate in candidates) // Isn't this a better option? This way if random = 0.9, the closest one below 0.9 would be taken instead of the ones above 0.9 (higher accumulated fitness, the worse you are)
+                if (candidate.AccumulatedNormalizedFitness <= random)
                     winner = candidate;
+
+            Debug.Log($"Winner fitness: {winner.Fitness}, Best fitness: {candidates.Max(x => x.Fitness)}");
 
             return winner;
         }
