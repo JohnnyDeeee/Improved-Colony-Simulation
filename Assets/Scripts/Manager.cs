@@ -7,10 +7,15 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts {
+    public static class Events {
+        public static int CREATURE_DIES = 1;
+    }
+
     public class Manager : ExposableMonobehaviour {
         private bool _isReady;
         private readonly List<GameObject> _parents = new List<GameObject>();
         private readonly List<CreatureBehaviour> _creatures = new List<CreatureBehaviour>();
+        private int _deathCount;
         [SerializeField] [ExposeProperty] public int CreatureAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int FoodAmount { get; private set; }
         [SerializeField] [ExposeProperty] public int TrapAmount { get; private set; }
@@ -24,7 +29,7 @@ namespace Assets.Scripts {
         private void Awake() {
             CreatureAmount = 100;
             FoodAmount = 400;
-            TrapAmount = 60;
+            TrapAmount = 300;
             Width = 800;
             Height = 600;
             GameLoopInSeconds = 30;
@@ -47,10 +52,11 @@ namespace Assets.Scripts {
 
             GameTime += Time.deltaTime;
 
-            if ((int) GameTime >= GameLoopInSeconds) {
+            if ((int) GameTime >= GameLoopInSeconds || _deathCount == _creatures.Count) {
                 GameLoopAmount += 1;
                 GameTime = 0;
                 _isReady = false;
+                _deathCount = 0;
 
                 // Genetic Algorithm()
                 CreatureBehaviour[] parents = GeneticAlgorithm.GetParents(_creatures).ToArray();
@@ -150,6 +156,11 @@ namespace Assets.Scripts {
                     border.transform.SetParent(bordersParent.transform, true);
                 }
             }
+        }
+
+        public void SendEvent(int _event) {
+            if (_event == Events.CREATURE_DIES)
+                _deathCount += 1;
         }
     }
 }

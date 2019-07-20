@@ -62,7 +62,7 @@ namespace Assets.Scripts {
         private Manager _manager;
         [SerializeField] private double[] _brainOutput;
         [SerializeField] public readonly Genome Genome = new Genome();
-        [ExposeProperty] [SerializeField] public float Mass => Genome.BaseMass + Food;
+        [ExposeProperty] [SerializeField] public float Mass => /*Genome.BaseMass +*/ Mathf.Clamp(Food, 5f, 20f);
 
         [ExposeProperty] [SerializeField] public float MassDebug {
             get { return Mass; }
@@ -144,6 +144,13 @@ namespace Assets.Scripts {
                 double r = sprite.color.r;
                 double g = sprite.color.g;
                 double b = sprite.color.b;
+
+                // Prevent seeing the 'debug' colors of the other creatures
+                if (vision.Value.collider.GetComponent<CreatureBehaviour>()) {
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                }
 
                 _brainOutput = Genome.Brain.FeedForward(new[] {r, g, b, 1, Mass}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not, ~ Mass amount]
 
@@ -247,9 +254,13 @@ namespace Assets.Scripts {
         }
 
         public void Die() {
+            if (Dead)
+                return; // We are already dead
+
             Dead = true;
             Color color = GetComponent<SpriteRenderer>().color;
             GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, 0.2f);
+            _manager.SendEvent(Events.CREATURE_DIES);
         }
 
         public void AddFood(int amount) {
