@@ -91,7 +91,7 @@ namespace Assets.Scripts {
             FoodDepletionMultiplier = 0.2f;
             _body = GetComponent<Rigidbody2D>();
             MaxSpeed = 0.3f;
-            MaxForce = 0.01f;
+            MaxForce = 0.1f;// 0.01f;
             Genome.Brain = new NeuralNetwork(5, 5, 1);
         }
 
@@ -141,9 +141,9 @@ namespace Assets.Scripts {
                 if (!sprite)
                     return;
 
-                double r = sprite.color.r;
-                double g = sprite.color.g;
-                double b = sprite.color.b;
+                double r = sprite.color.r * 255;
+                double g = sprite.color.g * 255;
+                double b = sprite.color.b * 255;
 
                 // Prevent seeing the 'debug' colors of the other creatures
                 if (vision.Value.collider.GetComponent<CreatureBehaviour>()) {
@@ -154,14 +154,26 @@ namespace Assets.Scripts {
 
                 _brainOutput = Genome.Brain.FeedForward(new[] {r, g, b, 1, Mass}); // Input [0-255 Red, 0-255 Green, 0-255 Blue, 0-1 Bool whether we see something or not, ~ Mass amount]
 
-                // Choose to avoid or follow what we see
-                if (_brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f)
-                    ApplyForce(AvoidForce(vision.Value.collider.transform.position));
-                else
-                    ApplyForce(SeekForce(vision.Value.collider.transform.position));
+                // DEBUG - Simulating the perfect brain
+                //_brainOutput = new double[1];
+                //if (r == 255 && g == 0 && b == 0)
+                //    _brainOutput[ChanceToFollowOrAvoidIndex] = 1f;
+                //else if (r == 0 && g == 255 && b == 0)
+                //    _brainOutput[ChanceToFollowOrAvoidIndex] = 0f;
+                //else
+                //    _brainOutput[ChanceToFollowOrAvoidIndex] = 0.5f;
 
-                // DEBUG - Show if creature is avoiding or following
-                GetComponent<SpriteRenderer>().color = _brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f ? Color.red : Color.green;
+                // Choose to avoid or follow what we see
+                if (_brainOutput[ChanceToFollowOrAvoidIndex] > 0.5f) {
+                    ApplyForce(AvoidForce(vision.Value.collider.transform.position));
+                    GetComponent<SpriteRenderer>().color = Color.red;
+                } else if (_brainOutput[ChanceToFollowOrAvoidIndex] < 0.5f) {
+                    ApplyForce(SeekForce(vision.Value.collider.transform.position));
+                    GetComponent<SpriteRenderer>().color = Color.green;
+                } else if (_brainOutput[ChanceToFollowOrAvoidIndex] == 0.5f) {
+                    ApplyForce(WanderForce());
+                    GetComponent<SpriteRenderer>().color = Color.white;
+                }
             } else { // If we see nothing, go wander
                 ApplyForce(WanderForce());
 
@@ -187,7 +199,7 @@ namespace Assets.Scripts {
 
             // Food depletion
             float distanceTraveled = Vector2.Distance(_body.position, Position - Velocity);
-            Food -= distanceTraveled * FoodDepletionMultiplier;
+            Food -= (distanceTraveled + 0.05f) * FoodDepletionMultiplier; // distanceTraveled + a bit so lazy f*cks that don't move won't take over the world
         }
 
         public void ApplyForce(Vector2 force) {
@@ -218,11 +230,12 @@ namespace Assets.Scripts {
 
         public RaycastHit2D? Vision() {
             // Vision boundary
+            float visionWidth = 1.0f;//3f;
             Vector2 ahead = GetForwardPosition(Genome.VisionLength);
             Vector2 leftEdge = ahead + GetLeftPosition(Genome.VisionLength, false);
             Vector2 rightEdge = ahead + GetRightPosition(Genome.VisionLength, false);
-            Vector2 rightVisionEdge = (leftEdge - rightEdge) / 3 + rightEdge;
-            Vector2 leftVisionEdge = (rightEdge - leftEdge) / 3 + leftEdge;
+            Vector2 rightVisionEdge = (leftEdge - rightEdge) / visionWidth + rightEdge;
+            Vector2 leftVisionEdge = (rightEdge - leftEdge) / visionWidth + leftEdge;
 
             // Get a point in between the vision edges
             float distanceBetweenLeftAndTarget = Vector2.Distance(leftVisionEdge, Target);
@@ -234,7 +247,11 @@ namespace Assets.Scripts {
             Target = (1f - distanceBetweenLeftAndTarget) * leftVisionEdge + distanceBetweenLeftAndTarget * rightVisionEdge;
 
             // DEBUG
-            //DebugExtensions.DrawLine(1, _body.position, Target, 0.15f, Color.white);
+            //DebugExtensions.DrawLine(1, _body.position, Target, 0.05f, new Color(1f, 1f, 1f, 0.6f));
+            //DebugExtensions.DrawLine(2, _body.position, leftEdge, 0.005f, Color.green);
+            //DebugExtensions.DrawLine(3, _body.position, rightEdge, 0.005f, Color.green);
+            //DebugExtensions.DrawLine(4, _body.position, leftVisionEdge, 0.005f, Color.blue);
+            //DebugExtensions.DrawLine(5, _body.position, rightVisionEdge, 0.005f, Color.blue);
 
             // Check if there is something at that point
             RaycastHit2D? hit = null;

@@ -35,6 +35,7 @@ namespace Assets.Scripts {
             GameLoopInSeconds = 30;
             GameLoopAmount = 1;
             Seed = Random.state; // Keep the seed the same for the whole game
+            Time.timeScale = 1f;
 
             // Add origin point for graph
             FindObjectOfType<Graph>().AddPoints(new Vector2[1] { new Vector2(0,0) });

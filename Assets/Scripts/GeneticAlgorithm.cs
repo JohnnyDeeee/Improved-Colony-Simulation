@@ -60,12 +60,19 @@ namespace Assets.Scripts {
         private static CreatureBehaviour ChooseWinner(CreatureBehaviour[] candidates) {
             float random = Random.value;
             CreatureBehaviour winner = null;
+            candidates = candidates.OrderBy(x => x.AccumulatedNormalizedFitness).ToArray();  // Make sure the list is ordered right (high norm fitness = better score)
+
             //foreach (CreatureBehaviour candidate in candidates.Reverse()) // Wikipedia doesn't mention reversing the list, but if we don't then we will always pick the latest one in the list (with the highest accNormFitness)
             //    if (candidate.AccumulatedNormalizedFitness >= random)
             //        winner = candidate;
             foreach (CreatureBehaviour candidate in candidates) // Isn't this a better option? This way if random = 0.9, the closest one below 0.9 would be taken instead of the ones above 0.9 (higher accumulated fitness, the worse you are)
                 if (candidate.AccumulatedNormalizedFitness <= random)
                     winner = candidate;
+
+            // If we have no winner, take the best one (fallback)
+            // TODO: I don't know why we won't always take the best one? Is it to introduce more diversity? Is mutation not enough for this?
+            if (!winner)
+                winner = candidates.First();
 
             Debug.Log($"Winner fitness: {winner.Fitness}, Best fitness: {candidates.Max(x => x.Fitness)}");
 
